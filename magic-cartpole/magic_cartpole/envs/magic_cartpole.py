@@ -5,7 +5,7 @@ permalink: https://perma.cc/C9ZM-652R
 """
 
 import math
-from typing import Optional, Tuple, Union
+from typing import Optional, Tuple, Union, Callable
 
 import numpy as np
 
@@ -32,10 +32,17 @@ class MagicCartPoleEnv(gym.Env[np.ndarray, Union[int, np.ndarray]]):
         sutton_barto_reward: bool = False,
         gravity: Optional[float] = 9.8,
         render_mode: Optional[str] = None,
+        gravity_mask: bool = False,
+        gravity_init: Callable = None,
+        gravity_perturbation: Callable = None,
     ):
+        self.gravity_init = gravity_init if gravity_init is not None else lambda: 9.81
         self._sutton_barto_reward = sutton_barto_reward
-
-        self._gravity = gravity
+        self.gravity_mask = gravity_mask
+        self.gravity_perturbation = (
+            gravity_perturbation if not gravity_perturbation is None else lambda: 0
+        )
+        # self._gravity = gravity
         self.gravity = gravity
         self.masscart = 1.0
         self.masspole = 0.1
@@ -58,6 +65,7 @@ class MagicCartPoleEnv(gym.Env[np.ndarray, Union[int, np.ndarray]]):
                 np.finfo(np.float32).max,
                 self.theta_threshold_radians * 2,
                 np.finfo(np.float32).max,
+                np.inf,
             ],
             dtype=np.float32,
         )
@@ -81,11 +89,14 @@ class MagicCartPoleEnv(gym.Env[np.ndarray, Union[int, np.ndarray]]):
             action
         ), f"{action!r} ({type(action)}) invalid"
         assert self.state is not None, "Call reset before using step method."
-        x, x_dot, theta, theta_dot = self.state
+        x, x_dot, theta, theta_dot, _ = self.state
 
         push, gravity = action
+        perturbation = self.gravity_perturbation()
 
-        self.gravity -= gravity - 1
+        if not self.gravity_mask:
+            self.gravity -= gravity - 1
+        self.gravity += perturbation
         force = self.force_mag if push == 1 else -self.force_mag
         costheta = math.cos(theta)
         sintheta = math.sin(theta)
@@ -111,7 +122,7 @@ class MagicCartPoleEnv(gym.Env[np.ndarray, Union[int, np.ndarray]]):
             theta_dot = theta_dot + self.tau * thetaacc
             theta = theta + self.tau * theta_dot
 
-        self.state = (x, x_dot, theta, theta_dot)
+        self.state = (x, x_dot, theta, theta_dot, self.gravity)
 
         terminated = bool(
             x < -self.x_threshold
@@ -163,8 +174,13 @@ class MagicCartPoleEnv(gym.Env[np.ndarray, Union[int, np.ndarray]]):
         low, high = utils.maybe_parse_reset_bounds(
             options, -0.05, 0.05  # default low
         )  # default high
-        self.gravity = self._gravity
-        self.state = self.np_random.uniform(low=low, high=high, size=(4,))
+        self.gravity = self.gravity_init()
+        self.state = np.array(
+            [
+                *self.np_random.uniform(low=low, high=high, size=(4,)),
+                self.gravity,
+            ]
+        )
         self.steps_beyond_terminated = None
 
         if self.render_mode == "human":
