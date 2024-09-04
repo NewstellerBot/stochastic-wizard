@@ -17,10 +17,25 @@ N_WIZARDS = 10
 
 
 def train_agent(n, type: Literal["wizard", "fighter"], device):
+
+    length_perturbation = lambda: 0  # + np.random.normal(loc=0, scale=10)
+    length_init = lambda: 0.5  # -9.81 + np.random.normal(loc=0, scale=1)
+
     if type == "wizard":
-        env = gym.make("MagicCartPole", render_mode="rgb_array")
+        env = gym.make(
+            "MagicCartPole/length",
+            render_mode="rgb_array",
+            length_init=length_init,
+            length_perturbation=length_perturbation,
+        )
     else:
-        env = gym.make("MagicCartPole", render_mode="rgb_array", gravity_mask=True)
+        env = gym.make(
+            "MagicCartPole/length",
+            render_mode="rgb_array",
+            length_mask=True,
+            length_init=length_init,
+            length_perturbation=length_perturbation,
+        )
 
     agent = PPO("MlpPolicy", env, device=device)
     last = 0
@@ -28,7 +43,7 @@ def train_agent(n, type: Literal["wizard", "fighter"], device):
     for steps in STEPS:
         agent.learn(steps - last)
         last = steps
-        agent.save(f"./checkpoints/{type}/{n}/{steps}")
+        agent.save(f"./checkpoints/length/{type}/{n}/{steps}")
 
 
 def wrapper(args):

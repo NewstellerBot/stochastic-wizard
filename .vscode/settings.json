@@ -1,5 +1,6 @@
 {
     "python.analysis.extraPaths": [
-        "./magic-cartpole"
+        "./magic-cartpole",
+        "./magic-mountain-car"
     ]
 }

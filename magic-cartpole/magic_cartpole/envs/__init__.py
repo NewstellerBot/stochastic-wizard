@@ -1,2 +1,0 @@
-from magic_cartpole.envs.magic_cartpole import MagicCartPoleEnv
-from magic_cartpole.envs.magic_cartpole import MagicCartPoleVectorEnv

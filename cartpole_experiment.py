@@ -1,15 +1,14 @@
 import matplotlib.pyplot as plt
 import numpy as np
 import gymnasium as gym
-import magic_cartpole
+import magic_env as _
 
-from stable_baselines3 import PPO
 from stable_baselines3.common.evaluation import evaluate_policy
 from stable_baselines3.common.monitor import Monitor
 
 from typing import Literal
 
-from train_agent import STEPS, N_FIGHTERS, N_WIZARDS
+from train.cartpole.both import STEPS, N_FIGHTERS, N_WIZARDS, ALGO
 from utils import calculate_confidence_interval
 
 from concurrent.futures import ProcessPoolExecutor
@@ -24,23 +23,31 @@ def test_agent(
     kind: Literal["wizard", "fighter"],
 ):
 
-    gravity_perturbation = lambda: 0  # + np.random.normal(loc=0, scale=10)
-    gravity_init = lambda: -9.81 + np.random.normal(loc=0, scale=1)
+    gravity_perturbation = lambda: 0 + np.random.normal(loc=0, scale=1)
+    gravity_init = lambda: 9.81 + np.random.normal(loc=0, scale=1)
+
+    length_init = lambda: 0.5
+    length_perturbations = lambda: np.random.normal(loc=0, scale=0.1)
 
     env = Monitor(
         gym.make(
-            "MagicCartPole",
+            "MagicCartPole/both",
             render_mode="rgb_array",
+            # Gravity mask
             gravity_mask=True,
             gravity_perturbation=gravity_perturbation,
             gravity_init=gravity_init,
+            # Lenght mask
+            length_mask=True,
+            length_init=length_init,
+            length_perturbation=length_perturbations,
         )
     )
 
     res = []
 
     for steps in STEPS:
-        agent = PPO.load(f"./checkpoints/{kind}/{n}/{steps}")
+        agent = ALGO.load(f"./checkpoints/both/{kind}/{n}/{steps}")
         mean, _ = evaluate_policy(agent, env, 1)
 
         res.append(mean)
