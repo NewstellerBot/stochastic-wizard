@@ -8,3 +8,4 @@ from magic_env.envs.acrobot import AcrobotEnv
 from magic_env.envs.pendulum import PendulumEnv
 from magic_env.envs.mujoco_ant import AntEnv
 from magic_env.envs.mujoco_walker import Walker2dEnv as WalkerEnv
+from magic_env.envs.mujoco_humanoidstandup import MagicHumanoidStandupEnv

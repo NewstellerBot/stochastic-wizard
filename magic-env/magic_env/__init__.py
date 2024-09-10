@@ -55,3 +55,9 @@ register(
     entry_point="magic_env.envs:WalkerEnv",
     max_episode_steps=1000,
 )
+
+register(
+    id="magic_env/HumanoidStandup",
+    entry_point="magic_env.envs:MagicHumanoidStandupEnv",
+    max_episode_steps=1000,
+)
